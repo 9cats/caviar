@@ -1,6 +1,6 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { AES, enc, mode, pad } from 'crypto-js'
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { AES, enc, mode, pad } from 'crypto-js';
 import * as superagent from "superagent";
 import type { ResponseType } from '../_type';
 import {getRelativeDate} from "../_utils";
@@ -80,7 +80,7 @@ class Sporter {
     /* 获取加密盐 execution */
     await this.agent
       .get('http://id.scuec.edu.cn/authserver/login')
-      .then(res => {
+      .then((res: { text: string; }) => {
         /* 从网页中获取 pwdEncryptSalt 和 execution */
         pwdEncryptSalt = /(?<=id="pwdEncryptSalt" value=")\w+(?=" )/.exec(res.text);
         execution = /(?<=name="execution" value=").+(?=" )/.exec(res.text);
@@ -103,12 +103,12 @@ class Sporter {
         dllt: "generalLogin",
         lt: "",
       })
-      .then(async res => {
+      .then(async (res: any) => {
         /* 成功登陆并授权 */
         await this.agent.get("http://id.scuec.edu.cn/authserver/login?service=http://wfw.scuec.edu.cn/2021/08/29/book")
         return true;
       })
-      .catch(e => {
+      .catch((e: any) => {
         /* 登陆失败 */
         return false;
       })
@@ -145,7 +145,7 @@ class Sporter {
         "yyrq": yyrq,         //预约日期
         "yycdbh": yycdbh      //预约场地编号
       })
-      .then(res => {
+      .then((res: { text: any; }) => {
         return res.text;
       })
 
@@ -158,7 +158,7 @@ class Sporter {
         "yyrq": yyrq,         //预约日期
         "yycdbh": yycdbh      //预约场地编号
       })
-      .then(res => {
+      .then((res: { text: any; }) => {
         return res.text;
       })
 
