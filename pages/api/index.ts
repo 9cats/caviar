@@ -9,6 +9,6 @@ export default function handler(
 ) {
   res.status(200).json({
     success: true,
-    msg: 'Hello World!',
+    data: 'Hello World!',
   })
 }

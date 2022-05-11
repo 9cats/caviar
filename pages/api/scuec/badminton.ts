@@ -23,7 +23,7 @@ export default async function handler(
   if (username && password && txrsfrzh && yysjd1 & yysjd2 && yycdbh && yyxdrq) {
     return res.status(200).json({
       success: false,
-      msg: '登陆失败',
+      data: '登陆失败',
     })
   }
 
@@ -33,7 +33,7 @@ export default async function handler(
   if (!await sporter.login()) {
     return res.status(200).json({
       success: false,
-      msg: '登陆失败',
+      data: '登陆失败',
     })
   }
 
@@ -42,7 +42,7 @@ export default async function handler(
 
   return res.status(200).json({
     success: true,
-    msg: result,
+    data: result,
   })
 }
 

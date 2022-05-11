@@ -7,11 +7,13 @@ export default async function handler(
   res: NextApiResponse<ResponseType>
 ) {
   let {
-    username = "", // 用户名
-    password = "", // 密码
+    username, // 用户名
+    password, // 密码
+    roomId,   // 教室id
+    seatNum   // 座位号
   } = req.body;
 
-  if (!(username && password)) {
+  if (!(username && password && roomId && seatNum)) {
     return res.status(200).json({
       success: false,
       data: '未填写参数',
@@ -29,6 +31,6 @@ export default async function handler(
   }
 
   /* 签到 */
-  let result = await student.sign();
+  let result = await student.sbumit(roomId, seatNum);
   return res.status(200).json(result)
 }
