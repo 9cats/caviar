@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { AES, enc, mode, pad } from 'crypto-js';
 import * as superagent from "superagent";
 import type { ResponseType } from '../_type';
-import {getRelativeDate} from "../_utils";
+import { delay, getRelativeDate, getTime } from "../_utils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -42,7 +42,7 @@ export default async function handler(
 
   return res.status(200).json({
     success: true,
-    data: result,
+    data: "result",
   })
 }
 
@@ -115,55 +115,97 @@ class Sporter {
   }
 
   /* 提交 */
-  async submit(txrsfrzh: string, yysjd1: string, yysjd2: string, yycdbh: string, yyrq: string): Promise<string> {
-    let lock1 = this.agent
-      .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
-      .set("Content-Type", "application/x-www-form-urlencoded")
-      .send({
-        "yysjd": yysjd1, //预约的时间段
-        "yyrq": yyrq, //预约日期
-        "yycdbh": yycdbh, //预约场地编号
-      })
+  async submit(txrsfrzh: string, yysjd1: string, yysjd2: string, yycdbh: string, yyrq: string): Promise<ResponseType> {
+    type submitResType = {
+      success: boolean
+      data: any
+      lastData: any
+    };
 
-    let lock2 = this.agent
-      .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
-      .set("Content-Type", "application/x-www-form-urlencoded")
-      .send({
-        "yysjd": yysjd2, //预约的时间段
-        "yyrq": yyrq, //预约日期
-        "yycdbh": yycdbh, //预约场地编号
-      })
+    let IsTimeout = false, IsSuccess = false;
+    let submitTask: Array<submitResType> = [
+      { success: false, data: {}, lastData: {} },
+      { success: false, data: {}, lastData: {} }];
 
-    await Promise.all([lock1, lock2]);
+    setTimeout(() => { IsTimeout = true }, 1000 * 60); //5分钟
 
-    let submit1 = this.agent
-      .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
-      .set("Content-Type", "application/x-www-form-urlencoded")
-      .send({
-        "txrsfrzh": txrsfrzh, //同行人身份认证号
-        "yysj": yysjd1,       //yydsj.replace('(', ''),
-        "yyrq": yyrq,         //预约日期
-        "yycdbh": yycdbh      //预约场地编号
-      })
-      .then((res: { text: any; }) => {
-        return res.text;
-      })
+    console.log("任务开始")
+    while (!IsTimeout) {
+      let lock1 = this.agent
+        .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
+        .set("Content-Type", "application/x-www-form-urlencoded")
+        .send({
+          "yysjd": yysjd1, //预约的时间段
+          "yyrq": yyrq, //预约日期
+          "yycdbh": yycdbh, //预约场地编号
+        })
 
-    let submit2 = this.agent
-      .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
-      .set("Content-Type", "application/x-www-form-urlencoded")
-      .send({
-        "txrsfrzh": txrsfrzh, //同行人身份认证号
-        "yysj": yysjd2,       //yydsj.replace('(', ''),
-        "yyrq": yyrq,         //预约日期
-        "yycdbh": yycdbh      //预约场地编号
-      })
-      .then((res: { text: any; }) => {
-        return res.text;
-      })
+      let lock2 = this.agent
+        .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
+        .set("Content-Type", "application/x-www-form-urlencoded")
+        .send({
+          "yysjd": yysjd2, //预约的时间段
+          "yyrq": yyrq, //预约日期
+          "yycdbh": yycdbh, //预约场地编号
+        })
 
-    return await Promise.all([submit1, submit2]).then(result => {
-      return result[0] + result[1];
-    });
+      // await Promise.all([lock1, lock2]);
+
+      let submit1 = this.agent
+        .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
+        .set("Content-Type", "application/x-www-form-urlencoded")
+        .send({
+          "txrsfrzh": txrsfrzh, //同行人身份认证号
+          "yysj": yysjd1,       //yydsj.replace('(', ''),
+          "yyrq": yyrq,         //预约日期
+          "yycdbh": yycdbh      //预约场地编号
+        })
+        .then((res: { body: any; }) => {
+          return res.body;
+        })
+
+      let submit2 = this.agent
+        .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
+        .set("Content-Type", "application/x-www-form-urlencoded")
+        .send({
+          "txrsfrzh": txrsfrzh, //同行人身份认证号
+          "yysj": yysjd2,       //yydsj.replace('(', ''),
+          "yyrq": yyrq,         //预约日期
+          "yycdbh": yycdbh      //预约场地编号
+        })
+        .then((res: { body: any; }) => {
+          return res.body;
+        })
+
+      Promise.all([submit1, submit2])
+        .then(result => {
+          console.log(getTime(), result[0])
+          console.log(getTime(), result[1])
+          submitTask.map((task, index) => {
+            console.log(getTime(), result[index])
+            task.lastData = result[0];
+            if (result[index].RTN_CODE == "01") {
+              task.success = true;
+              task.data = result[index];
+            }
+          })
+
+          if (submitTask[0].success && submitTask[1].success) IsSuccess = true;
+        })
+
+      if (IsSuccess) {
+        return {
+          success: true,
+          data: submitTask
+        }
+      }
+
+      await delay(500);
+    }
+    // RTN_CODE
+    return {
+      success: false,
+      data: submitTask
+    }
   }
 }

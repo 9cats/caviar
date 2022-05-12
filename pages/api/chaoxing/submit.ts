@@ -38,15 +38,21 @@ export default async function handler(
   if (result.success) return res.status(200).json(result); //一次成功
 
   /* 异步请求，高频率 */
-  let IsTimeout = false;
-  setTimeout(() => { IsTimeout = true }, 1000 * 300); //5分钟
+  let IsTimeout = false, IsSuccess = false;
+  setTimeout(() => { IsTimeout = true }, 1000 * 290); //5分钟
 
   while (!IsTimeout) {
     student.sbumit(roomId, seatNum, token).then(sbumitRes => {
       result = sbumitRes
       console.log(getTime(), sbumitRes)
-      if (sbumitRes.success) return res.status(200).json(result)  //成功
+      if (sbumitRes.success) {
+        IsSuccess = true;
+        res.status(200).json(result);
+      }
     })
+
+    if (IsSuccess) return;
+
     await delay(100);
   }
 
