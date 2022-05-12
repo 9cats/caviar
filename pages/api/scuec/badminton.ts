@@ -105,6 +105,7 @@ class Sporter {
       })
       .then(async (res: any) => {
         /* 成功登陆并授权 */
+        await delay(10);
         await this.agent.get("http://id.scuec.edu.cn/authserver/login?service=http://wfw.scuec.edu.cn/2021/08/29/book")
         return true;
       })
