@@ -39,7 +39,7 @@ export default async function handler(
 
   /* 异步请求，高频率 */
   let IsTimeout = false, IsSuccess = false;
-  setTimeout(() => { IsTimeout = true }, 1000 * 290); //5分钟
+  setTimeout(() => { IsTimeout = true }, 1000 * 20); //20 sec 时间
 
   while (!IsTimeout) {
     student.sbumit(roomId, seatNum, token).then(sbumitRes => {

@@ -128,7 +128,7 @@ class Sporter {
       { success: false, data: {}, lastData: {} },
       { success: false, data: {}, lastData: {} }];
 
-    setTimeout(() => { IsTimeout = true }, 1000 * 60); //5分钟
+    setTimeout(() => { IsTimeout = true }, 1000 * 180); //3分钟
 
     console.log("任务开始")
     while (!IsTimeout) {
