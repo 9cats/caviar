@@ -65,7 +65,6 @@ export class ChaoXing {
       .get('https://office.chaoxing.com/data/apps/seatengine/sign')
       .query({ id: recentID })
       .then(res => {
-        console.log(res.body);
         return {
           success: res.body.success,
           data: res.body.msg
@@ -90,8 +89,7 @@ export class ChaoXing {
   }
 
   /* 预约 */
-  async sbumit(roomId: String, seatNum: String): Promise<ResponseType> {
-    let token = await this.getToken(roomId);
+  async sbumit(roomId: String, seatNum: String, token: String): Promise<ResponseType> {
     return await this.agent
       .post('https://office.chaoxing.com/data/apps/seatengine/submit')
       .type('form') //发送数据格式 Form

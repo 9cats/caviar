@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { ResponseType } from '../_type';
 import { ChaoXing } from './_chaoxing';
+import { delay, getTime } from '../_utils';
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,6 +32,23 @@ export default async function handler(
   }
 
   /* 签到 */
-  let result = await student.sbumit(roomId, seatNum);
-  return res.status(200).json(result)
+  let token = await student.getToken(roomId);
+  let result: ResponseType = await student.sbumit(roomId, seatNum, token);
+
+  if (result.success) return res.status(200).json(result); //一次成功
+
+  /* 异步请求，高频率 */
+  let IsTimeout = false;
+  setTimeout(() => { IsTimeout = true }, 1000 * 300); //5分钟
+
+  while (!IsTimeout) {
+    student.sbumit(roomId, seatNum, token).then(sbumitRes => {
+      result = sbumitRes
+      console.log(getTime(), sbumitRes)
+      if (sbumitRes.success) return res.status(200).json(result)  //成功
+    })
+    await delay(100);
+  }
+
+  return res.status(200).json(result); //超时
 }
