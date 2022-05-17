@@ -11,7 +11,7 @@ export function getRelativeDate(dxrq: string) {
   return `${year}-${month}-${day}`;
 }
 
-export async function delay(ms:number) {
+export async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
@@ -19,11 +19,12 @@ export function getTime() {
   let time = new Date(); //server 时间
 
   let year = time.getFullYear()
-  let month = (time.getMonth() + 1)
-  let day = time.getDate()
-  let hour = time.getHours()
-  let minute = time.getMinutes()
-  let second = time.getSeconds()
+  let month = (time.getMonth() + 1).toString().padStart(2, "0")
+  let day = time.getDate().toString().padStart(2, "0")
+  let hour = time.getHours().toString().padStart(2, "0")
+  let minute = time.getMinutes().toString().padStart(2, "0")
+  let second = time.getSeconds().toString().padStart(2, "0")
+  let millisecond = time.getMilliseconds().toString().padStart(3, "0")
 
-  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  return `${year}-${month}-${day} ${hour}:${minute}:${second} ${millisecond}`
 }

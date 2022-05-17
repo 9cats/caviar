@@ -1,14 +1,19 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AES, enc, mode, pad } from 'crypto-js';
-import * as superagent from "superagent";
+import superagent from "superagent";
+import enableProxy from 'superagent-proxy';
 import type { ResponseType } from '../_type';
 import { delay, getRelativeDate, getTime } from "../_utils";
 
-export default async function handler(
+enableProxy(superagent);
+
+var proxy = process.env.http_proxy || 'http://127.0.0.1:8560';
+
+export default async (
   req: NextApiRequest,
   res: NextApiResponse<ResponseType>
-) {
+) => {
   let {
     username = "username", // 用户名
     password = "password", // 密码
@@ -40,10 +45,7 @@ export default async function handler(
   /* 提交 */
   let result = await sporter.submit(txrsfrzh, yysjd1, yysjd2, yycdbh, getRelativeDate(yyxdrq));
 
-  return res.status(200).json({
-    success: true,
-    data: "result",
-  })
+  return res.status(200).json(result);
 }
 
 /* 返回加密后的密码 */
@@ -117,96 +119,61 @@ class Sporter {
 
   /* 提交 */
   async submit(txrsfrzh: string, yysjd1: string, yysjd2: string, yycdbh: string, yyrq: string): Promise<ResponseType> {
-    type submitResType = {
-      success: boolean
-      data: any
-      lastData: any
-    };
+    type TaskParam = {
+      type: "lock" | "submit",
+      yysjd: string,
+    }
 
-    let IsTimeout = false, IsSuccess = false;
-    let submitTask: Array<submitResType> = [
-      { success: false, data: {}, lastData: {} },
-      { success: false, data: {}, lastData: {} }];
+    type TaskResponse = {
+      name: string;
+      data: any,
+    }
 
-    setTimeout(() => { IsTimeout = true }, 1000 * 180); //3分钟
+    const tasksParams: TaskParam[] = [
+      { type: "lock", yysjd: yysjd1 },
+      { type: "lock", yysjd: yysjd2 },
+      { type: "submit", yysjd: yysjd1 },
+      { type: "submit", yysjd: yysjd2 }
+    ]
 
-    console.log("任务开始")
-    while (!IsTimeout) {
-      let lock1 = this.agent
-        .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
-        .set("Content-Type", "application/x-www-form-urlencoded")
-        .send({
-          "yysjd": yysjd1, //预约的时间段
-          "yyrq": yyrq, //预约日期
-          "yycdbh": yycdbh, //预约场地编号
+    let intervalTasks_timer = setInterval(() => {
+      tasksParams
+        .map((param: TaskParam): Promise<TaskResponse> => {
+          const { type, yysjd } = param;
+          const url = type == "lock" ?
+            "https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status" :
+            "https://wfw.scuec.edu.cn/2021/08/29/book/book"
+          // "http://localhost:3000/api/test/check_playground_status" :
+          // "http://localhost:3000/api/test/book"
+          const data = type == "lock" ?
+            { yysjd, yycdbh, yyrq } :
+            { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
+
+          return this.agent
+            .post(url)
+            .set("Content-Type", "application/x-www-form-urlencoded")
+            .send(data)
+            //.proxy(proxy)
+            //.withCredentials()
+            .then((response: superagent.Response) => {
+              const { body: data } = response
+              return { data, name: `${this.username}|${type}|${yysjd}` }
+            })
+            .catch((error: superagent.ResponseError) => {
+              // 赋值 const {}
+              return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+            })
         })
-
-      let lock2 = this.agent
-        .post("https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status")
-        .set("Content-Type", "application/x-www-form-urlencoded")
-        .send({
-          "yysjd": yysjd2, //预约的时间段
-          "yyrq": yyrq, //预约日期
-          "yycdbh": yycdbh, //预约场地编号
-        })
-
-      // await Promise.all([lock1, lock2]);
-
-      let submit1 = this.agent
-        .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
-        .set("Content-Type", "application/x-www-form-urlencoded")
-        .send({
-          "txrsfrzh": txrsfrzh, //同行人身份认证号
-          "yysj": yysjd1,       //yydsj.replace('(', ''),
-          "yyrq": yyrq,         //预约日期
-          "yycdbh": yycdbh      //预约场地编号
-        })
-        .then((res: { body: any; }) => {
-          return res.body;
-        })
-
-      let submit2 = this.agent
-        .post("https://wfw.scuec.edu.cn/2021/08/29/book/book")
-        .set("Content-Type", "application/x-www-form-urlencoded")
-        .send({
-          "txrsfrzh": txrsfrzh, //同行人身份认证号
-          "yysj": yysjd2,       //yydsj.replace('(', ''),
-          "yyrq": yyrq,         //预约日期
-          "yycdbh": yycdbh      //预约场地编号
-        })
-        .then((res: { body: any; }) => {
-          return res.body;
-        })
-
-      Promise.all([submit1, submit2])
-        .then(result => {
-          console.log(getTime(), result[0])
-          console.log(getTime(), result[1])
-          submitTask.map((task, index) => {
-            console.log(getTime(), result[index])
-            task.lastData = result[0];
-            if (result[index].RTN_CODE == "01") {
-              task.success = true;
-              task.data = result[index];
-            }
+        .map((task: Promise<TaskResponse>) => {
+          task.then((response: TaskResponse) => {
+            console.log(getTime(), response.name);
+            console.log(getTime(), response.data);
           })
-
-          if (submitTask[0].success && submitTask[1].success) IsSuccess = true;
         })
+    }, 5000)
 
-      if (IsSuccess) {
-        return {
-          success: true,
-          data: submitTask
-        }
-      }
+    setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 60 * 60);
 
-      await delay(500);
-    }
-    // RTN_CODE
-    return {
-      success: false,
-      data: submitTask
-    }
+    return { success: true, data: "任务已创建" };
   }
 }
