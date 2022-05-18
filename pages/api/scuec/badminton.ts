@@ -138,41 +138,40 @@ class Sporter {
 
     let intervalTasks_timer = setInterval(() => {
       tasksParams
-        .map((param: TaskParam): Promise<TaskResponse> => {
-          const { type, yysjd } = param;
-          const url = type == "lock" ?
-            "https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status" :
-            "https://wfw.scuec.edu.cn/2021/08/29/book/book"
-          // "http://localhost:3000/api/test/check_playground_status" :
-          // "http://localhost:3000/api/test/book"
-          const data = type == "lock" ?
-            { yysjd, yycdbh, yyrq } :
-            { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
+        .map((param: TaskParam, index: number) => {
+          setTimeout(() => {
+            const { type, yysjd } = param;
+            const url = type == "lock" ?
+              "https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status" :
+              "https://wfw.scuec.edu.cn/2021/08/29/book/book"
+            // "http://localhost:3000/api/test/check_playground_status" :
+            // "http://localhost:3000/api/test/book"
+            const data = type == "lock" ?
+              { yysjd, yycdbh, yyrq } :
+              { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
 
-          return this.agent
-            .post(url)
-            .set("Content-Type", "application/x-www-form-urlencoded")
-            .send(data)
-            //.proxy(proxy)
-            //.withCredentials()
-            .then((response: superagent.Response) => {
-              const { body: data } = response
-              return { data, name: `${this.username}|${type}|${yysjd}` }
-            })
-            .catch((error: superagent.ResponseError) => {
-              // 赋值 const {}
-              return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
-            })
+            this.agent
+              .post(url)
+              .set("Content-Type", "application/x-www-form-urlencoded")
+              .send(data)
+              //.proxy(proxy)
+              //.withCredentials()
+              .then((response: superagent.Response): TaskResponse => {
+                const { body: data } = response
+                return { data, name: `${this.username}|${type}|${yysjd}` }
+              })
+              .catch((error: superagent.ResponseError): TaskResponse => {
+                return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+              })
+              .then((response: TaskResponse) => {
+                console.log(getTime(), response.name);
+                console.log(getTime(), response.data);
+              })
+          }, 0)
         })
-        .map((task: Promise<TaskResponse>) => {
-          task.then((response: TaskResponse) => {
-            console.log(getTime(), response.name);
-            console.log(getTime(), response.data);
-          })
-        })
-    }, 5000)
+    }, 1000)
 
-    setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 60 * 60);
+    setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 30);
 
     return { success: true, data: "任务已创建" };
   }
