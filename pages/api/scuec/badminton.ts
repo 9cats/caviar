@@ -168,9 +168,9 @@ class Sporter {
                 console.log(getTime(), data);
                 console.log(getTime(), response.data);
               })
-          }, 0)
+          }, 10)
         })
-    }, 1000)
+    }, 750)
 
     setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 30);
 
