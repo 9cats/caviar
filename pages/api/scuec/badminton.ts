@@ -165,6 +165,7 @@ class Sporter {
               })
               .then((response: TaskResponse) => {
                 console.log(getTime(), response.name);
+                console.log(getTime(), data);
                 console.log(getTime(), response.data);
               })
           }, 0)
