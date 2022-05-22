@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AES, enc, mode, pad } from 'crypto-js';
 import superagent from "superagent";
+import { CookieAccessInfo } from "cookiejar";
 import enableProxy from 'superagent-proxy';
 import type { ResponseType } from '../_type';
 import { delay, getRelativeDate, getTime } from "../_utils";
@@ -150,10 +151,14 @@ class Sporter {
               { yysjd, yycdbh, yyrq } :
               { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
 
-            this.agent
+            let taskAgent = superagent.agent();
+            taskAgent.set("Cookie", this.agent.jar.getCookies(new CookieAccessInfo("wfw.scuec.edu.cn", "/")).toLocaleString());
+
+            taskAgent
               .post(url)
               .set("Content-Type", "application/x-www-form-urlencoded")
               .send(data)
+              .timeout({ deadline: 1000, response: 1000 })
               //.proxy(proxy)
               //.withCredentials()
               .then((response: superagent.Response): TaskResponse => {
@@ -161,14 +166,18 @@ class Sporter {
                 return { data, name: `${this.username}|${type}|${yysjd}` }
               })
               .catch((error: superagent.ResponseError): TaskResponse => {
-                return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+                if (error.status = 400) {
+                  return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+                }
+
+                return { data: error.message, name: `${this.username}|${type}|${yysjd}` }
               })
               .then((response: TaskResponse) => {
                 console.log(getTime(), response.name);
                 console.log(getTime(), data);
                 console.log(getTime(), response.data);
               })
-          }, 10)
+          }, 0)
         })
     }, 750)
 
