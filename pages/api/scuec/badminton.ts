@@ -174,12 +174,11 @@ class Sporter {
               })
               .then((response: TaskResponse) => {
                 console.log(getTime(), response.name);
-                console.log(getTime(), data);
                 console.log(getTime(), response.data);
               })
-          }, 0)
+          }, 10 * index)
         })
-    }, 750)
+    }, 500)
 
     setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 30);
 
