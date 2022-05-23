@@ -177,7 +177,7 @@ class Sporter {
                 })
             }, 10 * index)
           })
-      }, 250)
+      }, 800)
     }
 
     let intervalTasks_timer: NodeJS.Timer;
