@@ -89,14 +89,14 @@ export class ChaoXing {
   }
 
   /* 预约 */
-  async sbumit(roomId: String, seatNum: String, token: String): Promise<ResponseType> {
+  async sbumit(roomId: String, seatNum: String, startTime: String, endTime: String, token: String): Promise<ResponseType> {
     return await this.agent
       .post('https://office.chaoxing.com/data/apps/seatengine/submit')
       .type('form') //发送数据格式 Form
       .send({ //发送数据
         roomId: roomId,
-        startTime: "8:00",
-        endTime: "22:00",
+        startTime: startTime,
+        endTime: endTime,
         day: getRelativeDate("1"),
         seatNum: seatNum,
         token: token

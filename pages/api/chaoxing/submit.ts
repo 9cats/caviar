@@ -7,11 +7,13 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseType>
 ) {
-  let {
+  const {
     username, // 用户名
     password, // 密码
     roomId,   // 教室id
-    seatNum   // 座位号
+    seatNum,  // 座位号
+    startTime,// 开始时间
+    endTime,  // 结束时间
   } = req.body;
 
   if (!(username && password && roomId && seatNum)) {
@@ -33,7 +35,7 @@ export default async function handler(
 
   /* 签到 */
   let token = await student.getToken(roomId);
-  let result: ResponseType = await student.sbumit(roomId, seatNum, token);
+  let result: ResponseType = await student.sbumit(roomId, seatNum, startTime, endTime, token);
 
   if (result.success) return res.status(200).json(result); //一次成功
 
@@ -42,7 +44,7 @@ export default async function handler(
   setTimeout(() => { IsTimeout = true }, 1000 * 20); //20 sec 时间
 
   while (!IsTimeout) {
-    student.sbumit(roomId, seatNum, token).then(sbumitRes => {
+    student.sbumit(roomId, seatNum, startTime, endTime,token).then(sbumitRes => {
       result = sbumitRes
       console.log(getTime(), sbumitRes)
       if (sbumitRes.success) {
