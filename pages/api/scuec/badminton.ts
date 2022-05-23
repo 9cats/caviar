@@ -137,50 +137,53 @@ class Sporter {
       { type: "submit", yysjd: yysjd2 }
     ]
 
-    let intervalTasks_timer = setInterval(() => {
-      tasksParams
-        .map((param: TaskParam, index: number) => {
-          setTimeout(() => {
-            const { type, yysjd } = param;
-            const url = type == "lock" ?
-              "https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status" :
-              "https://wfw.scuec.edu.cn/2021/08/29/book/book"
-            // "http://localhost:3000/api/test/check_playground_status" :
-            // "http://localhost:3000/api/test/book"
-            const data = type == "lock" ?
-              { yysjd, yycdbh, yyrq } :
-              { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
+    let intervalTasks_timer_init = () => {
+      return setInterval(() => {
+        tasksParams
+          .map((param: TaskParam, index: number) => {
+            setTimeout(() => {
+              const { type, yysjd } = param;
+              const url = type == "lock" ?
+                "https://wfw.scuec.edu.cn/2021/08/29/book/check_playground_status" :
+                "https://wfw.scuec.edu.cn/2021/08/29/book/book"
+              // "http://localhost:3000/api/test/check_playground_status" :
+              // "http://localhost:3000/api/test/book"
+              const data = type == "lock" ?
+                { yysjd, yycdbh, yyrq } :
+                { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
 
-            let taskAgent = superagent.agent();
-            taskAgent.set("Cookie", this.agent.jar.getCookies(new CookieAccessInfo("wfw.scuec.edu.cn", "/")).toLocaleString());
+              this.agent
+                .post(url)
+                .set("Content-Type", "application/x-www-form-urlencoded")
+                .send(data)
+                .timeout({ deadline: 1000, response: 1000 })
+                //.proxy(proxy)
+                //.withCredentials()
+                .then((response: superagent.Response): TaskResponse => {
+                  const { body: data } = response
+                  return { data, name: `${this.username}|${type}|${yysjd}` }
+                })
+                .catch((error: superagent.ResponseError): TaskResponse => {
+                  console.log(getTime(), error.status == 400 ? error.status : error.message);
+                  if (error.status == 400) {
+                    return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+                  }
 
-            taskAgent
-              .post(url)
-              .set("Content-Type", "application/x-www-form-urlencoded")
-              .send(data)
-              .timeout({ deadline: 1000, response: 1000 })
-              //.proxy(proxy)
-              //.withCredentials()
-              .then((response: superagent.Response): TaskResponse => {
-                const { body: data } = response
-                return { data, name: `${this.username}|${type}|${yysjd}` }
-              })
-              .catch((error: superagent.ResponseError): TaskResponse => {
-                if (error.status = 400) {
-                  return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
-                }
+                  return { data: error.message, name: `${this.username}|${type}|${yysjd}` }
+                })
+                .then((response: TaskResponse) => {
+                  console.log(getTime(), response.name);
+                  console.log(getTime(), response.data);
+                })
+            }, 10 * index)
+          })
+      }, 250)
+    }
 
-                return { data: error.message, name: `${this.username}|${type}|${yysjd}` }
-              })
-              .then((response: TaskResponse) => {
-                console.log(getTime(), response.name);
-                console.log(getTime(), response.data);
-              })
-          }, 10 * index)
-        })
-    }, 500)
+    let intervalTasks_timer: NodeJS.Timer;
 
-    setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 30);
+    setTimeout(() => { intervalTasks_timer = intervalTasks_timer_init() }, 5000);
+    setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 50);
 
     return { success: true, data: "任务已创建" };
   }
