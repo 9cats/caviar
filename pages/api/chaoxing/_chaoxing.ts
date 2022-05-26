@@ -1,6 +1,20 @@
 import * as superagent from "superagent";
+import { DES, enc, mode, pad } from 'crypto-js';
 import type { ResponseType } from '../_type';
 import { getRelativeDate } from "../_utils";
+
+
+/* 返回加密后的密码 */
+function encryptPassword(password: string, key: string) {
+  let keyHex = enc.Utf8.parse(key);
+  let config = {
+    mode: mode.ECB,
+    padding: pad.Pkcs7
+  }
+  let result = DES.encrypt(password, keyHex, config).ciphertext.toString();
+  return result;
+}
+
 
 export class ChaoXing {
   username: string;
@@ -21,8 +35,11 @@ export class ChaoXing {
       .type('form') //发送数据格式 Form
       .send({ //发送数据
         uname: this.username,
-        password: Buffer.from(this.password).toString('base64'),
-        t: 'true'
+        password: encryptPassword(this.password, 'u2oh6Vu^HWe40fj'),
+        t: 'true',
+        fid: '-1',
+        forbidotherlogin: '0',
+        refer: 'http%3A%2F%2Fi.chaoxing.com'
       })
       .then(async res => {
         let result = JSON.parse(res.text).status;
