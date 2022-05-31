@@ -76,7 +76,7 @@ function getCookie(setCookies: string[], cookieKey: string) {
 function stringifyCookies(Cookies: any) {
   let cookieValue = '';
   Object.keys(Cookies).map(key => {
-    cookieValue += Cookies[key] + ' ';
+    cookieValue += Cookies[key];
   })
   return cookieValue;
 }
@@ -84,95 +84,81 @@ function stringifyCookies(Cookies: any) {
 class Sporter {
   username: string;
   password: string;
+  session: string;
   axios: AxiosInstance;
 
   /* 构造函数 */
   constructor(username: string, password: string) {
     this.username = username; //账号
     this.password = password; //密码
+    this.session = ''; //session
     this.axios = axios.create({
+      // maxRedirects: 0,
       withCredentials: true,
     });
+
   }
 
-  /* 登陆 */
   async login(): Promise<boolean> {
+    let next_url = '';
+    let cookies: any = {};
+
     let pwdEncryptSalt: RegExpExecArray | null = null;
     let execution: RegExpExecArray | null = null;
 
-    const cookies: any = {};
+    const config = {
+      // proxy: { host: '127.0.0.1', port: 8560 }
+    }
 
-    /* 获取加密盐 execution */
     await this.axios
-      .get('http://id.scuec.edu.cn/authserver/login', {
-        // proxy: { host: '127.0.0.1', port: 8560 }
-      })
+      .get('http://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook', config)
       .then((response: AxiosResponse) => {
 
         /* 从网页中获取 pwdEncryptSalt 和 execution */
         pwdEncryptSalt = /(?<=id="pwdEncryptSalt" value=")\w+(?=" )/.exec(response.data);
         execution = /(?<=name="execution" value=").+(?=" )/.exec(response.data);
 
-        let setCookies = response.headers['set-cookie'];
+        const setCookies = response.headers['set-cookie'];
         if (setCookies) {
-          // cookies['route'] = getCookie(setCookies, 'route');
-          // cookies['JSESSIONID'] = getCookie(setCookies, 'JSESSIONID');
-          // cookies['i18'] = 'org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en;';
+          cookies['route'] = getCookie(setCookies, 'route');
+          cookies['JSESSIONID'] = getCookie(setCookies, 'JSESSIONID');
+          cookies['i18'] = 'org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en;';
         }
       });
-
 
     /* 未能获取到 pwdEncryptSalt 和 execution */
     if (!(pwdEncryptSalt && execution)) return false;
 
-    /* 登陆 */
-    const data = {
-      username: this.username,
-      password: encryptPassword(this.password, pwdEncryptSalt[0]),
-      execution: execution[0],
-      captcha: "", //验证码
-      _eventId: "submit",
-      cllt: "userNameLogin",
-      dllt: "generalLogin",
-      lt: "",
-    }
-
-    const config = {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': stringifyCookies(cookies)
-      },
-      // proxy: { host: '127.0.0.1', port: 8560 }
-    }
-
-    await this.axios
-      .post("https://id.scuec.edu.cn/authserver/login", stringify(data), config)
+    return await this.axios
+      .post("http://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook", stringify({
+        username: this.username,
+        password: encryptPassword(this.password, pwdEncryptSalt[0]),
+        captcha: "", //验证码
+        _eventId: "submit",
+        cllt: "userNameLogin",
+        dllt: "generalLogin",
+        lt: "",
+        execution: execution[0],
+      }), {
+        ...config,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cookie': stringifyCookies(cookies),
+        },
+        beforeRedirect: (options: AxiosRequestConfig) => {
+          // console.log("beforeRedirect", "302");
+        }
+      })
       .then((response: AxiosResponse) => {
-
-        console.log(response.status);
-        console.log(response.data);
-
-        let setCookies = response.headers['set-cookie'];
-        if (setCookies) {
-          cookies['GASTGC'] = getCookie(setCookies, 'GASTGC');
-        }
-
-        const config = {
-          headers: {
-            'Cookies': stringifyCookies(cookies)
-          }
-        }
-        /* 成功登陆并授权 */
-        // await delay(10);
-        // await this.axios.get("http://id.scuec.edu.cn/authserver/login?service=http://wfw.scuec.edu.cn/2021/08/29/book", config)
+        const setCookies = response.headers['set-cookie'];
+        if (setCookies) this.session = getCookie(setCookies, 'scuec_session');
+        console.log(this.session);
         return true;
       })
       .catch((error: AxiosError) => {
-        /* 登陆失败 */
+        console.log("Login error");
         return false;
       })
-
-    return false;
   }
 
   /* 提交 */
@@ -185,6 +171,14 @@ class Sporter {
     type TaskResponse = {
       name: string;
       data: any,
+    }
+
+    const config = {
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': this.session,
+      },
+      // proxy: { host: '127.0.0.1', port: 8560 }
     }
 
     const tasksParams: TaskParam[] = [
@@ -207,48 +201,35 @@ class Sporter {
                 { yysjd, yycdbh, yyrq } :
                 { yysj: yysjd, yycdbh, yyrq, txrsfrzh }
 
-              const config = {
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                proxy: { host: '127.0.0.1', port: 8560 }
-              }
+              this.axios
+                .post(url, stringify(data), config)
+                .then((response: AxiosResponse): TaskResponse => {
+                  const { data } = response
+                  return { data, name: `${this.username}|${type}|${yysjd}` }
+                })
+                .catch((error: AxiosError): TaskResponse => {
+                  console.log(getTime(), error.code);
 
-              // this.axios
-              //   .post(url, qs.stringify(data), config)
-              //   .then((response: AxiosResponse): TaskResponse => {
-              //     const { data } = response
-              //     return { data, name: `${this.username}|${type}|${yysjd}` }
-              //   })
-              //   .catch((error: AxiosError): TaskResponse => {
-              //     console.log(getTime(), error.code);
-
-              //     console.log(getTime(), error.code == "400" ? error.status : error.message);
-              //     if (error.status == "400") {
-              //       return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
-              //     }
-              //     return { data: error.message, name: `${this.username}|${type}|${yysjd}` }
-              //   })
-              //   .then((response: TaskResponse) => {
-              //     console.log(getTime(), response.name);
-              //     console.log(getTime(), response.data);
-              //   })
+                  console.log(getTime(), error.code == "400" ? error.status : error.message);
+                  if (error.status == "400") {
+                    return { data: error.status, name: `${this.username}|${type}|${yysjd}` }
+                  }
+                  return { data: error.message, name: `${this.username}|${type}|${yysjd}` }
+                })
+                .then((response: TaskResponse) => {
+                  console.log(getTime(), response.name);
+                  console.log(getTime(), response.data);
+                })
             }, 10 * index)
           })
-      }, 800)
+      }, 333)
     }
 
     let intervalTasks_timer: NodeJS.Timer;
 
-    // setTimeout(() => { intervalTasks_timer = intervalTasks_timer_init() }, 5000);
-    // setTimeout(() => { clearInterval(intervalTasks_timer) }, 1000 * 50);
+    setTimeout(() => { intervalTasks_timer = intervalTasks_timer_init() }, 0);
+    setTimeout(() => { clearInterval(intervalTasks_timer) }, 30000);
 
     return { success: true, data: "任务已创建" };
   }
 }
-
-
-
-        // console.log(response.data);
-        // console.log(response.status);
-        // console.log(response.statusText);
-        // console.log(response.headers);
-        // console.log(response.config);
