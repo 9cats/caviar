@@ -20,7 +20,7 @@ export default async function handler(
   let agent = superagent.agent(); //agent
 
   let result = await agent
-    .get(`http://chaoxing_slidecaptcha_verify:8888/validate/get?num=${num}`)
+    .get(`http://chaoxing_slidecaptcha_verify:8888/validate/clear`)
     .then(async (res : {body: ResponseType}) => {
       return res.body
     })
