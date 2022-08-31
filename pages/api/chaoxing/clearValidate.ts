@@ -6,17 +6,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseType>
 ) {
-  let {
-    num = "", // 个数
-  } = req.body;
-
-  if (!num) {
-    return res.status(200).json({
-      success: false,
-      data: "未填写参数",
-    });
-  }
-
   let agent = superagent.agent(); //agent
 
   let result = await agent
