@@ -7,8 +7,8 @@ export default async function handler(
   res: NextApiResponse<ResponseType>
 ) {
   let {
-    num = "", // 用户名
-  } = req.query;
+    num = "", // 个数
+  } = req.body;
 
   if (!num) {
     return res.status(200).json({
