@@ -107,6 +107,22 @@ export class ChaoXing {
 
   /* 预约 */
   async sbumit(roomId: String, seatNum: String, startTime: String, endTime: String, token: String): Promise<ResponseType> {
+    /* 获取图形验证信息 */
+    let captcha = await this.agent.get("http://chaoxing_slidecaptcha_verify:8888/validate/pop")
+      .then(async res => {
+        if(res.body.success) {
+          return res.body.validate
+        }
+        else {
+          return "validate_null"
+        }
+      })
+      .catch(e => {
+        return "validate_error"
+      })
+    
+    console.log(captcha)
+
     return await this.agent
       .post('https://office.chaoxing.com/data/apps/seatengine/submit')
       .type('form') //发送数据格式 Form
@@ -116,7 +132,8 @@ export class ChaoXing {
         endTime: endTime,
         day: getRelativeDate("1"),
         seatNum: seatNum,
-        token: token
+        token: token,
+        captcha: captcha
       })
       .then(res => {
         return {
