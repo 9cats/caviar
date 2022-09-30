@@ -8,4 +8,4 @@ EXPOSE 3000
 # Change timezone to shanghai
 ENV TZ='Asia/Shanghai'
 # run the app
-CMD npm i --registry=https://registry.npm.taobao.org && npm run build && npm run start
+CMD npm i -g npm@latest --registry=https://registry.npm.taobao.org && npm i --registry=https://registry.npm.taobao.org && npm run build && npm run start
