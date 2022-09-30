@@ -56,31 +56,24 @@ export class ChaoXing {
   /* 签到 */
   async sign(): Promise<ResponseType> {
     /* 获取最近的预约信息 */
-    let recentID = await this.agent
-      .get('https://office.chaoxing.com/data/apps/seatengine/reservelist')
-      .query({
-        pageSize: '1',
-        seatId: '602'
-      })
-      .then(res => {
-        try {
-          return res.body.data.reserveList[0].id;
-        } catch (e) {
-          return null;
-        }
-      })
-
-    if (!recentID) {
-      return {
-        success: false,
-        data: "未能获取到最近的预约信息"
-      };
-    }
+    let reserveInfo = await this.agent
+    .get('https://office.chaoxing.com/data/apps/seatengine/reservelist')
+    .query({
+      pageSize: '1',
+      seatId: '1234'
+    })
+    .then(res => {
+      try {
+        return res.body.data.reserveList[0];
+      } catch (e) {
+        return null;
+      }
+    })
 
     /* 签到 */
     return await this.agent
       .get('https://office.chaoxing.com/data/apps/seatengine/sign')
-      .query({ id: recentID })
+      .query(reserveInfo)
       .then(res => {
         return {
           success: res.body.success,
