@@ -99,66 +99,78 @@ class Sporter {
 
   }
 
-  async login(): Promise<boolean> {
-    let next_url = '';
+  async login():Promise<boolean>{
+    let pwdEncryptSalt: string = "";
+    let execution: string = "";
     let cookies: any = {};
 
-    let pwdEncryptSalt: RegExpExecArray | null = null;
-    let execution: RegExpExecArray | null = null;
-
     const config = {
-      // proxy: { host: '127.0.0.1', port: 8560 }
+        // proxy: { host: '127.0.0.1', port: 8888 }
     }
 
     await this.axios
-      .get('http://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook', config)
-      .then((response: AxiosResponse) => {
+        .get('http://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook', config)
+        .then((response: AxiosResponse) => {
 
-        /* 从网页中获取 pwdEncryptSalt 和 execution */
-        pwdEncryptSalt = /(?<=id="pwdEncryptSalt" value=")\w+(?=" )/.exec(response.data);
-        execution = /(?<=name="execution" value=").+(?=" )/.exec(response.data);
+            /* 从网页中获取 pwdEncryptSalt 和 execution (正则表达式提取) */
+            const RegExpResult = {
+                pwdEncryptSalt: /(?<=id="pwdEncryptSalt" value=")\w+(?=" )/.exec(response.data),
+                execution: /(?<=name="execution" value=").+(?=" )/.exec(response.data)
+            }
 
-        const setCookies = response.headers['set-cookie'];
-        if (setCookies) {
-          cookies['route'] = getCookie(setCookies, 'route');
-          cookies['JSESSIONID'] = getCookie(setCookies, 'JSESSIONID');
-          cookies['i18'] = 'org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en;';
-        }
-      });
+            /* 未能成功获取 */
+            if (!(RegExpResult.pwdEncryptSalt?.length && RegExpResult.execution?.length)) {
+                return false;
+            }
 
-    /* 未能获取到 pwdEncryptSalt 和 execution */
-    if (!(pwdEncryptSalt && execution)) return false;
+            /* 获取 pwdEncryptSalt 和 execution */
+            pwdEncryptSalt = RegExpResult.pwdEncryptSalt[0];
+            execution = RegExpResult.execution[0];
 
-    return await this.axios
-      .post("http://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook", stringify({
-        username: this.username,
-        password: encryptPassword(this.password, pwdEncryptSalt[0]),
-        captcha: "", //验证码
-        _eventId: "submit",
-        cllt: "userNameLogin",
-        dllt: "generalLogin",
-        lt: "",
-        execution: execution[0],
-      }), {
-        ...config,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': stringifyCookies(cookies),
-        },
-        beforeRedirect: (options: AxiosRequestConfig) => {
-          // console.log("beforeRedirect", "302");
-        }
-      })
-      .then((response: AxiosResponse) => {
-        const setCookies = response.headers['set-cookie'];
-        if (setCookies) this.session = getCookie(setCookies, 'scuec_session');
-        console.log(this.session);
+            /* 获取 cookie */
+            const setCookies = response.headers['set-cookie'];
+
+            if (setCookies) {
+                cookies['route'] = getCookie(setCookies, 'route');
+                cookies['JSESSIONID'] = getCookie(setCookies, 'JSESSIONID');
+                cookies['i18'] = 'org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en;';
+            }
+        });
+
+
+    /* 登录 */
+    await this.axios
+        .post("https://id.scuec.edu.cn/authserver/login?service=http%3A%2F%2Fwfw.scuec.edu.cn%2F2021%2F08%2F29%2Fbook", stringify({
+            username: this.username,
+            password: encryptPassword(this.password, pwdEncryptSalt),
+            captcha: "", //验证码
+            _eventId: "submit",
+            cllt: "userNameLogin",
+            dllt: "generalLogin",
+            lt: "",
+            execution: execution,
+        }), {
+            ...config,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Cookie': stringifyCookies(cookies),
+            },
+            beforeRedirect: (options: AxiosRequestConfig) => {
+                //console.log("beforeRedirect");
+            }
+        })
+        .then((response: AxiosResponse) => {
+            const setCookies = response.headers['set-cookie'];
+            if (setCookies) this.session = getCookie(setCookies, 'scuec_session');
+            console.log(this.session);
+            return true;
+        })
+        .catch((error: AxiosError) => {
+            console.log("Login error");
+            return false;
+        })
+
         return true;
-      })
-      .catch((error: AxiosError) => {
-        console.log("Login error");
-        return false;
-      })
   }
 
   /* 提交 */
