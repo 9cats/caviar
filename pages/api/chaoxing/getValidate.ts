@@ -7,13 +7,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseType>
 ) {
-  // console.log(req.query);
-  // let {
-  //   num = "", // 个数
-  // } = req.body;
-  let { num } = req.query;
+  let {
+    num = "", // 个数
+  } = req.body;
   let numInt = parseInt(num as string);
-  console.log(numInt)
 
   if (!num) {
     return res.status(200).json({
