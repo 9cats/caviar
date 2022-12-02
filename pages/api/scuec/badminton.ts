@@ -2,7 +2,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { AES, enc, mode, pad } from 'crypto-js';
 import superagent from "superagent";
-import { CookieAccessInfo } from "cookiejar";
 import enableProxy from 'superagent-proxy';
 import type { ResponseType } from '../_type';
 import { delay, getRelativeDate, getTime } from "../_utils";
