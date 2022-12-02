@@ -69,7 +69,7 @@ export default async function handler(
   const imageVerificationList = await Promise.all(requestImageVerification);
 
   let result = await superagent
-    .post(`http://127.0.0.1:8888/validate/get`)
+    .post(`http://chaoxing_slidecaptcha_verify:8888/validate/get`)
     .send({
       num,
       imageVerificationList
