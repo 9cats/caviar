@@ -225,7 +225,7 @@ function generateCaptchaKey() {
 
   var randomStr = randomString() + token;
   var captchaKey = _0x14e7da(randomStr);
-  token = _0x14e7da(captchaId + type + captchaKey) + ':' + (parseInt(token) + 0x493e0);
+  token = _0x14e7da(token + captchaId + type + captchaKey) + ':' + (parseInt(token) + 0x493e0);
   // console.log({ captchaKey, token })
   return { captchaKey, token }
 }

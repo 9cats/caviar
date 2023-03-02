@@ -37,7 +37,7 @@ export default async function handler(
               callback: "callback",
               captchaId: "42sxgHoTPTKbt0uZxPJ7ssOvtXr3ZgZ1",
               type: "slide",
-              version: "1.1.13",
+              version: "1.1.14",
               captchaKey,
               token,
               referer:
