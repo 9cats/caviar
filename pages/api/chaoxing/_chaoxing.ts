@@ -75,7 +75,7 @@ export class ChaoXing {
       .get("https://office.chaoxing.com/data/apps/seatengine/reservelist")
       .query({
         pageSize: "1",
-        seatId: "1234",
+        seatId: "602",
       })
       .then((res) => {
         try {

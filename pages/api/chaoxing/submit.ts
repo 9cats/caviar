@@ -55,7 +55,7 @@ export default async function handler(
 
     if (IsSuccess) return;
 
-    await delay(200);
+    await delay(25);
   }
 
   return res.status(200).json(result); //超时
